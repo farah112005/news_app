@@ -1,4 +1,3 @@
-// views/forgot_password_screen.dart
 import 'package:flutter/material.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -15,7 +14,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   void _submit() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      // You can add reset logic or confirmation message here
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Reset link sent (simulated).')),
       );

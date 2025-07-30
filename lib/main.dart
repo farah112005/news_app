@@ -1,13 +1,21 @@
-// main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import 'cubits/auth_cubit.dart';
+import 'cubits/news_cubit.dart';
+import 'repositories/news_repository.dart';
+import 'services/news_service.dart';
+
 import 'views/login_screen.dart';
 import 'views/register_screen.dart';
 import 'views/forgot_password_screen.dart';
 import 'views/home_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load();
+
   runApp(const MyApp());
 }
 
@@ -16,8 +24,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => AuthCubit()..checkAuthStatus(),
+    final newsRepository = NewsRepository(newsService: NewsService());
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthCubit>(create: (_) => AuthCubit()..checkAuthStatus()),
+        BlocProvider<NewsCubit>(create: (_) => NewsCubit(newsRepository)),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'News App',
@@ -28,7 +41,6 @@ class MyApp extends StatelessWidget {
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
-        // Always start with Login
         initialRoute: '/login',
         routes: {
           '/login': (_) => const LoginScreen(),

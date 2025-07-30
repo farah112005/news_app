@@ -6,7 +6,6 @@ class User {
   final String passwordHash;
   final String? phoneNumber;
   final DateTime? dateOfBirth;
-  final String? profileImage;
   final DateTime createdAt;
   final DateTime? lastLoginAt;
 
@@ -18,7 +17,6 @@ class User {
     required this.passwordHash,
     this.phoneNumber,
     this.dateOfBirth,
-    this.profileImage,
     required this.createdAt,
     this.lastLoginAt,
   });
@@ -33,7 +31,6 @@ class User {
     dateOfBirth: json['dateOfBirth'] != null
         ? DateTime.parse(json['dateOfBirth'])
         : null,
-    profileImage: json['profileImage'],
     createdAt: DateTime.parse(json['createdAt']),
     lastLoginAt: json['lastLoginAt'] != null
         ? DateTime.parse(json['lastLoginAt'])
@@ -48,12 +45,10 @@ class User {
     'passwordHash': passwordHash,
     'phoneNumber': phoneNumber,
     'dateOfBirth': dateOfBirth?.toIso8601String(),
-    'profileImage': profileImage,
     'createdAt': createdAt.toIso8601String(),
     'lastLoginAt': lastLoginAt?.toIso8601String(),
   };
 
-  // ✅ علشان auth_cubit ما يشتكيش:
   factory User.fromMap(Map<String, dynamic> map) => User.fromJson(map);
   Map<String, dynamic> toMap() => toJson();
 }

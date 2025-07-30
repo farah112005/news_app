@@ -1,4 +1,3 @@
-// cubits/auth_state.dart
 import '../models/user_model.dart';
 
 abstract class AuthState {}

@@ -1,5 +1,3 @@
-// lib/cubits/auth_cubit.dart
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/user_model.dart';
 import '../services/local_auth_service.dart';
