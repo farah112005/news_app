@@ -1,112 +1,101 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/article_model.dart';
+import '../cubits/bookmarks_cubit.dart';
 
-class ArticleCard extends StatelessWidget {
+class ArticleCard extends StatefulWidget {
   final ArticleModel article;
-  final VoidCallback? onTap;
-  final VoidCallback? onBookmark;
-  final VoidCallback? onShare;
 
-  const ArticleCard({
-    super.key,
-    required this.article,
-    this.onTap,
-    this.onBookmark,
-    this.onShare,
-  });
+  const ArticleCard({required this.article, super.key});
+
+  @override
+  State<ArticleCard> createState() => _ArticleCardState();
+}
+
+class _ArticleCardState extends State<ArticleCard> {
+  bool isLiked = false;
 
   @override
   Widget build(BuildContext context) {
-    final formatter = DateFormat('yMMMd – hh:mm a');
+    final isBookmarked = context.watch<BookmarksCubit>().isBookmarked(
+      widget.article,
+    );
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        elevation: 3,
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (article.imageUrl != null)
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
-                ),
-                child: Image.network(
-                  article.imageUrl!,
-                  width: double.infinity,
-                  height: 180,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    article.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text(
-                        article.source,
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        formatter.format(article.publishedAt),
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    article.description,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Chip(
-                        label: Text(article.category),
-                        backgroundColor: Colors.deepPurple.shade50,
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              article.isBookmarked
-                                  ? Icons.bookmark
-                                  : Icons.bookmark_border,
-                              color: Colors.deepPurple,
-                            ),
-                            onPressed: onBookmark,
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.share),
-                            onPressed: onShare,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+    return Card(
+      margin: const EdgeInsets.all(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.article.imageUrl != null &&
+              widget.article.imageUrl!.isNotEmpty)
+            Image.network(widget.article.imageUrl!),
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              widget.article.title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-          ],
-        ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              widget.article.source,
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              IconButton(
+                icon: Icon(
+                  isLiked ? Icons.favorite : Icons.favorite_border,
+                  color: isLiked ? Colors.red : null,
+                ),
+                onPressed: () {
+                  setState(() {
+                    isLiked = !isLiked;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        isLiked ? 'تم الإعجاب بالمنشور' : 'تم إلغاء الإعجاب',
+                      ),
+                    ),
+                  );
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.share),
+                onPressed: () {
+                  Share.share(widget.article.url);
+                },
+              ),
+              IconButton(
+                icon: Icon(
+                  isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                  color: isBookmarked ? Colors.grey : null,
+                ),
+                onPressed: () {
+                  final cubit = context.read<BookmarksCubit>();
+                  if (isBookmarked) {
+                    cubit.removeFromBookmarks(widget.article);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('تم إزالة المنشور من المفضلة'),
+                      ),
+                    );
+                  } else {
+                    cubit.addToBookmarks(widget.article);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('تم الحفظ في المفضلة')),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

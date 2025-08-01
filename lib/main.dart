@@ -1,53 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import 'cubits/auth_cubit.dart';
-import 'cubits/news_cubit.dart';
-import 'repositories/news_repository.dart';
-import 'services/news_service.dart';
-
+// Screens
+import 'views/home_screen.dart';
 import 'views/login_screen.dart';
 import 'views/register_screen.dart';
 import 'views/forgot_password_screen.dart';
-import 'views/home_screen.dart';
+import 'views/bookmarks_screen.dart';
+import 'views/profile_screen.dart';
+import 'views/search_screen.dart';
 
-Future<void> main() async {
+// Services & Repositories
+import 'services/news_service.dart';
+import 'repositories/news_repository.dart';
+import 'services/local_auth_service.dart';
+
+// Cubits & States
+import 'cubits/news_cubit.dart';
+import 'cubits/auth_cubit.dart';
+import 'cubits/auth_state.dart';
+import 'cubits/bookmarks_cubit.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load();
 
-  runApp(const MyApp());
+  final authService = LocalAuthService();
+  final authCubit = AuthCubit(authService);
+  await authCubit.checkRememberedLogin();
+
+  final newsService = NewsService();
+  final newsRepository = NewsRepository(newsService);
+
+  runApp(
+    MyApp(
+      authCubit: authCubit,
+      newsRepository: newsRepository,
+      authService: authService,
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AuthCubit authCubit;
+  final NewsRepository newsRepository;
+  final LocalAuthService authService; // ← أضفنا ده
+
+  const MyApp({
+    super.key,
+    required this.authCubit,
+    required this.newsRepository,
+    required this.authService, // ← أضفنا ده
+  });
 
   @override
   Widget build(BuildContext context) {
-    final newsRepository = NewsRepository(newsService: NewsService());
-
     return MultiBlocProvider(
       providers: [
-        BlocProvider<AuthCubit>(create: (_) => AuthCubit()..checkAuthStatus()),
-        BlocProvider<NewsCubit>(create: (_) => NewsCubit(newsRepository)),
+        BlocProvider(create: (_) => BookmarksCubit()),
+        BlocProvider<AuthCubit>.value(value: authCubit),
+        BlocProvider<NewsCubit>(
+          create: (_) => NewsCubit(newsRepository)..fetchNews(),
+        ),
       ],
       child: MaterialApp(
-        debugShowCheckedModeBanner: false,
         title: 'News App',
-        theme: ThemeData(
-          primarySwatch: Colors.deepPurple,
-          scaffoldBackgroundColor: Colors.grey[200],
-          inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        initialRoute: '/login',
+        debugShowCheckedModeBanner: false,
         routes: {
-          '/login': (_) => const LoginScreen(),
-          '/register': (_) => const RegisterScreen(),
-          '/forgot': (_) => const ForgotPasswordScreen(),
-          '/home': (_) => const HomeScreen(),
+          '/home': (context) => const HomeScreen(),
+          '/register': (context) => const RegisterScreen(),
+          '/forgot': (context) => const ForgotPasswordScreen(),
+          '/bookmarks': (context) => const BookmarksScreen(),
+          '/search': (context) => const SearchScreen(),
+          '/profile': (context) => ProfileScreen(authService: authService),
         },
+        home: const LoginScreen(), // ✅ أول صفحة تظهر
       ),
     );
   }

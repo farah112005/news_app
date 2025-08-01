@@ -1,5 +1,7 @@
+// login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../cubits/auth_cubit.dart';
 import '../cubits/auth_state.dart';
 
@@ -15,11 +17,12 @@ class _LoginScreenState extends State<LoginScreen> {
   String _email = '';
   String _password = '';
   bool _obscure = true;
+  bool _rememberMe = false;
 
   void _submit() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      context.read<AuthCubit>().login(_email, _password, true);
+      context.read<AuthCubit>().login(_email, _password, _rememberMe);
     }
   }
 
@@ -94,6 +97,20 @@ class _LoginScreenState extends State<LoginScreen> {
                               ? null
                               : 'Password must be at least 6 characters',
                           onSaved: (val) => _password = val ?? '',
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: _rememberMe,
+                              onChanged: (val) {
+                                setState(() {
+                                  _rememberMe = val ?? false;
+                                });
+                              },
+                            ),
+                            const Text("Remember Me"),
+                          ],
                         ),
                         const SizedBox(height: 24),
                         ElevatedButton(

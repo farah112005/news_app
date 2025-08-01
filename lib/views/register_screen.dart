@@ -14,6 +14,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
+
   final Map<String, dynamic> _formData = {
     'firstName': '',
     'lastName': '',
@@ -40,7 +41,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    context.read<AuthCubit>().register(_formData);
+    context.read<AuthCubit>().register(
+      _formData['firstName'],
+      _formData['lastName'],
+      _formData['email'],
+      _formData['password'],
+    );
   }
 
   Future<void> _pickDate() async {
@@ -73,7 +79,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(title: const Text("Create Account")),
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
-          if (state is AuthRegistered) {
+          if (state is AuthRegistered || state is AuthSuccess) {
             Navigator.pushReplacementNamed(context, '/home');
           } else if (state is AuthError) {
             ScaffoldMessenger.of(
@@ -128,7 +134,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           Icons.phone,
                         ),
                         keyboardType: TextInputType.phone,
-                        validator: ValidationUtils.validatePhone,
+                        validator: (val) {
+                          if (val == null || val.length < 3) {
+                            return 'Must be at least 3 characters';
+                          }
+                          return null;
+                        },
                         onSaved: (val) => _formData['phoneNumber'] = val,
                       ),
                       const SizedBox(height: 10),
@@ -175,12 +186,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                         validator: (val) {
-                          if (val == null || val.isEmpty) {
+                          if (val == null || val.isEmpty)
                             return "Confirm your password";
-                          }
-                          if (val.trim() != _passwordController.text.trim()) {
+                          if (val.trim() != _passwordController.text.trim())
                             return "Passwords do not match";
-                          }
                           return null;
                         },
                         onSaved: (val) => _formData['confirmPassword'] = val,

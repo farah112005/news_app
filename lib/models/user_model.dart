@@ -1,4 +1,7 @@
-class User {
+// lib/models/user_model.dart
+import 'dart:convert';
+
+class UserModel {
   final String id;
   final String firstName;
   final String lastName;
@@ -6,10 +9,11 @@ class User {
   final String passwordHash;
   final String? phoneNumber;
   final DateTime? dateOfBirth;
+  final String? profileImage;
   final DateTime createdAt;
   final DateTime? lastLoginAt;
 
-  User({
+  UserModel({
     required this.id,
     required this.firstName,
     required this.lastName,
@@ -17,11 +21,12 @@ class User {
     required this.passwordHash,
     this.phoneNumber,
     this.dateOfBirth,
+    this.profileImage,
     required this.createdAt,
     this.lastLoginAt,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) => User(
+  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
     id: json['id'],
     firstName: json['firstName'],
     lastName: json['lastName'],
@@ -31,6 +36,7 @@ class User {
     dateOfBirth: json['dateOfBirth'] != null
         ? DateTime.parse(json['dateOfBirth'])
         : null,
+    profileImage: json['profileImage'],
     createdAt: DateTime.parse(json['createdAt']),
     lastLoginAt: json['lastLoginAt'] != null
         ? DateTime.parse(json['lastLoginAt'])
@@ -45,10 +51,8 @@ class User {
     'passwordHash': passwordHash,
     'phoneNumber': phoneNumber,
     'dateOfBirth': dateOfBirth?.toIso8601String(),
+    'profileImage': profileImage,
     'createdAt': createdAt.toIso8601String(),
     'lastLoginAt': lastLoginAt?.toIso8601String(),
   };
-
-  factory User.fromMap(Map<String, dynamic> map) => User.fromJson(map);
-  Map<String, dynamic> toMap() => toJson();
 }

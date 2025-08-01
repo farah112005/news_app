@@ -1,79 +1,79 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../models/user_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/local_auth_service.dart';
 import 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
-  AuthCubit() : super(AuthInitial());
+  final LocalAuthService authService;
 
-  final _authService = LocalAuthService();
+  AuthCubit(this.authService) : super(AuthInitial());
 
-  Future<void> register(Map<String, dynamic> userData) async {
+  Future<void> login(
+    String email,
+    String password, [
+    bool rememberMe = false,
+  ]) async {
     emit(AuthLoading());
-    try {
-      await _authService.register(userData);
-      final user = await _authService.getCurrentUser();
-      if (user != null) {
-        emit(AuthRegistered(User.fromMap(user)));
-      } else {
-        emit(AuthError("Failed to retrieve registered user", "register"));
+
+    final user = await authService.login(email, password);
+    if (user != null) {
+      if (rememberMe) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('remember_me', true);
+        await prefs.setString('email', email);
       }
-    } catch (e) {
-      emit(AuthError(e.toString(), "register"));
+      emit(AuthSuccess(user));
+    } else {
+      emit(AuthError("Invalid credentials"));
     }
   }
 
-  Future<void> login(String email, String password, bool rememberMe) async {
+  Future<void> register(
+    String firstName,
+    String lastName,
+    String email,
+    String password,
+  ) async {
     emit(AuthLoading());
-    try {
-      final success = await _authService.login(
-        email,
-        password,
-        rememberMe: rememberMe,
-      );
-      if (success) {
-        final user = await _authService.getCurrentUser();
-        if (user != null) {
-          emit(AuthSuccess(User.fromMap(user)));
-        } else {
-          emit(AuthError("User not found", "login"));
-        }
-      } else {
-        emit(AuthError("Invalid email or password", "login"));
-      }
-    } catch (e) {
-      emit(AuthError(e.toString(), "login"));
+
+    final exists = await authService.isUserExists(email);
+    if (exists) {
+      emit(AuthError("Email already exists"));
+      return;
     }
+
+    final user = await authService.register(
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      password: password,
+    );
+
+    emit(AuthSuccess(user));
   }
 
   Future<void> logout() async {
-    await _authService.logout();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('remember_me');
+    await prefs.remove('email');
+
+    await authService.logout();
     emit(AuthLoggedOut());
   }
 
-  Future<void> checkAuthStatus() async {
-    final user = await _authService.getCurrentUser();
-    if (user != null) {
-      emit(AuthSuccess(User.fromMap(user)));
-    } else {
-      emit(AuthLoggedOut());
-    }
-  }
+  Future<void> checkRememberedLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final remembered = prefs.getBool('remember_me') ?? false;
+    final email = prefs.getString('email');
 
-  Future<void> updateProfile(User updatedUser) async {
-    await _authService.updateProfile(updatedUser.toMap());
-    emit(AuthSuccess(updatedUser));
-  }
-
-  Future<void> changePassword(String oldPassword, String newPassword) async {
-    final success = await _authService.changePassword(oldPassword, newPassword);
-    if (!success) {
-      emit(AuthError("Old password incorrect", "changePassword"));
-    } else {
-      final user = await _authService.getCurrentUser();
+    if (remembered && email != null) {
+      final user = await authService.getUserByEmail(email);
       if (user != null) {
-        emit(AuthSuccess(User.fromMap(user)));
+        emit(AuthSuccess(user));
+        return;
       }
     }
+
+    emit(AuthLoggedOut());
   }
 }
